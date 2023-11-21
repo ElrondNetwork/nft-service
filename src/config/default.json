@@ -69,14 +69,15 @@
     "updateAllNftTraitsBatchSize": 10000,
     "getNftsForScamInfoBatchSize": 100,
     "elasticMaxBatch": 10000,
-    "dbBatch": 1000,
+    "dbBatch": 10000,
     "complexityLevel": 200,
     "getLogsFromElasticBatchSize": 1000,
     "dbMaxTimestamp": 2147483647,
     "defaultPageOffset": 0,
     "defaultPageSize": 10,
     "dbMaxDenominatedValue": 99999999999999999,
-    "dbMaxTagLength": 20
+    "dbMaxTagLength": 20,
+    "marketplaceReindexDataMaxInMemoryItems": 25000
   },
   "elasticDictionary": {
     "scamInfo": {

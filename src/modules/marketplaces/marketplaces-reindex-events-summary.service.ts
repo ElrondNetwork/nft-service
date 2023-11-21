@@ -34,19 +34,18 @@ export class MarketplacesReindexEventsSummaryService {
     });
   }
 
-  private getEventsAndTxData(eventsSet: MarketplaceEventsEntity[]): [MarketplaceEventsEntity[], MarketplaceTransactionData] {
-    const eventsOrderedByOrderAsc = eventsSet.sort((a, b) => {
-      return a.eventOrder - b.eventOrder;
-    });
-    const tx = eventsSet[0].isTx ? eventsSet[0] : undefined;
+  private getEventsAndTxData(
+    eventsSet: MarketplaceEventsEntity[],
+  ): [MarketplaceEventsEntity[] | undefined, MarketplaceTransactionData | undefined] {
+    const tx = eventsSet.find((event) => event.isTx);
 
-    if (eventsOrderedByOrderAsc.length === 1 && tx) {
-      return [undefined, undefined];
+    if (eventsSet.length === 1 && tx) {
+      return [undefined, tx.data?.txData];
     }
 
-    const eventsStartIdx = tx ? 1 : 0;
+    const eventsWithoutTx = eventsSet.filter((event) => !event.isTx);
 
-    return [eventsOrderedByOrderAsc.slice(eventsStartIdx), tx?.data?.txData];
+    return [eventsWithoutTx.length > 0 ? eventsWithoutTx : undefined, tx?.data?.txData];
   }
 
   private getEventSummary(event: MarketplaceEventsEntity, txData: MarketplaceTransactionData, marketplace: Marketplace): any {
@@ -106,7 +105,8 @@ export class MarketplacesReindexEventsSummaryService {
       case AuctionEventEnum.WithdrawOffer: {
         return OfferClosedSummary.fromWithdrawOfferEventAndTx(event, txData);
       }
-      case AuctionEventEnum.WithdrawAuctionAndAcceptOffer: {
+      case AuctionEventEnum.WithdrawAuctionAndAcceptOffer:
+      case ExternalAuctionEventEnum.AcceptOfferFromAuction: {
         if (event.hasEventTopicIdentifier(AuctionEventEnum.Accept_offer_token_event)) {
           return OfferAcceptedSummary.fromAcceptOfferEventAndTx(event, txData, marketplace);
         } else {
@@ -114,7 +114,7 @@ export class MarketplacesReindexEventsSummaryService {
         }
       }
       default: {
-        throw new Error(`Unhandled marketplace event - ${event.data.eventData.identifier}`);
+        throw new Error(`Unhandled marketplace event - ${event?.data?.eventData?.identifier}`);
       }
     }
   }

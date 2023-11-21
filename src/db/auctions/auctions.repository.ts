@@ -32,6 +32,9 @@ import {
   getLowestAuctionForIdentifiersAndMarketplace,
   getOnSaleAssetsCountForCollection,
 } from './sql.queries';
+import { CpuProfiler } from '@multiversx/sdk-nestjs-monitoring';
+import { OrderEntity } from '../orders';
+import { TagEntity } from './tags.entity';
 
 @Injectable()
 export class AuctionsRepository {
@@ -421,9 +424,136 @@ export class AuctionsRepository {
     return await this.auctionsRepository.save(auction);
   }
 
-  async saveBulkAuctions(auctions: AuctionEntity[]): Promise<void> {
-    await this.auctionsRepository.save(auctions, {
-      chunk: constants.dbBatch,
+  async getBulkAuctionsByMarketplaceAndAuctionIds(marketplaceKey: string, marketplaceAuctionIds: number[]): Promise<AuctionEntity[]> {
+    return await this.auctionsRepository
+      .createQueryBuilder('a')
+      .select('id, marketplaceAuctionId')
+      .where(`a.marketplaceKey = '${marketplaceKey}'`)
+      .andWhere(`a.marketplaceAuctionId IN(:...marketplaceAuctionIds)`, {
+        marketplaceAuctionIds: marketplaceAuctionIds,
+      })
+      .orderBy('a.marketplaceAuctionId', 'ASC')
+      .execute();
+  }
+
+  // async saveBulkAuctions(auctions: AuctionEntity[]): Promise<void> {
+  //   await this.auctionsRepository.save(auctions, {
+  //     chunk: 1000,
+  //   });
+  // }
+
+  // async saveBulkAuctionsOrUpdateAndFillId(auctions: AuctionEntity[]): Promise<void> {
+  //   const batchSize = 1000;
+  //   if (auctions.length === 0) {
+  //     return;
+  //   }
+
+  //   const connection = this.auctionsRepository.manager.connection;
+
+  //   await connection.transaction(async (transactionalEntityManager) => {
+  //     for (let i = 0; i < auctions.length; i += batchSize) {
+  //       const batch = auctions.slice(i, i + batchSize);
+  //       console.log('Processing batch number', i);
+
+  //       const cpu = new CpuProfiler();
+  //       // for (const item of batch) {
+  //       const currentQueryBuilder = transactionalEntityManager
+  //         .createQueryBuilder()
+  //         .from(AuctionEntity, 'auction')
+  //         .insert()
+  //         .values(batch)
+  //         .orUpdate({
+  //           conflict_target: ['marketplaceKey', 'marketplaceAuctionId'],
+  //           overwrite: [
+  //             'collection',
+  //             'nrAuctionedTokens',
+  //             'identifier',
+  //             'nonce',
+  //             'status',
+  //             'type',
+  //             'paymentToken',
+  //             'paymentNonce',
+  //             'ownerAddress',
+  //             'minBidDiff',
+  //             'minBid',
+  //             'minBidDenominated',
+  //             'maxBid',
+  //             'maxBidDenominated',
+  //             'startDate',
+  //             'tags',
+  //             'blockHash',
+  //           ],
+  //         });
+  //       console.log(currentQueryBuilder.getQueryAndParameters());
+  //       // Include related orders
+
+  //       await currentQueryBuilder.execute();
+  //       // }
+
+  //       cpu.stop(`batch ${i}`);
+  //     }
+
+  //     console.log('Bulk insert or update completed successfully.');
+  //   });
+  // }
+
+  async saveBulkAuctionsOrUpdateAndFillId(auctions: AuctionEntity[]): Promise<void> {
+    const batchSize = 1000;
+    if (auctions.length === 0) {
+      return;
+    }
+
+    const connection = this.auctionsRepository.manager.connection;
+
+    await connection.transaction(async (transactionalEntityManager) => {
+      for (let i = 0; i < auctions.length; i += batchSize) {
+        const batch = auctions.slice(i, i + batchSize);
+        console.log('Processing batch number', i);
+
+        const cpu = new CpuProfiler();
+        const response = await transactionalEntityManager
+          .createQueryBuilder()
+          .from(AuctionEntity, 'auction')
+          .insert()
+          .into(AuctionEntity)
+          .values(batch)
+          .execute();
+        console.log({ auctions: response?.identifiers?.length });
+
+        let orders = [];
+        let tags = [];
+        for (const item of batch) {
+          if (item.orders) {
+            item.orders.forEach((i) => {
+              i.auction = item;
+            });
+            orders.push(...item.orders);
+          }
+          if (item.tagEntities && item.tagEntities.length > 0) {
+            console.log(item.tagEntities);
+            item.tagEntities.forEach((i) => {
+              i.auction = item;
+            });
+
+            tags.push(...item.tagEntities);
+          }
+        }
+        if (orders.length) {
+          const res = await transactionalEntityManager.createQueryBuilder().insert().into(OrderEntity).values(orders).execute();
+
+          console.log({ orders: res?.identifiers?.length });
+        }
+
+        if (tags.length) {
+          const res = await transactionalEntityManager.createQueryBuilder().insert().into(TagEntity).values(tags).execute();
+
+          console.log({ orders: res?.identifiers?.length });
+        }
+
+        cpu.stop(`batch ${i}`);
+      }
+
+      console.log('Bulk insert or update completed successfully.');
     });
   }
 

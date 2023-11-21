@@ -10,20 +10,18 @@ export class ReindexAuctionClosedHandler {
   constructor() {}
 
   handle(marketplaceReindexState: MarketplaceReindexState, input: ReindexAuctionClosedSummary): void {
-    const auctionIndex =
+    const auction =
       marketplaceReindexState.marketplace.key !== ELRONDNFTSWAP_KEY
-        ? marketplaceReindexState.getAuctionIndexByAuctionId(input.auctionId)
-        : marketplaceReindexState.getAuctionIndexByIdentifier(input.identifier);
+        ? marketplaceReindexState.auctionMap.get(input.auctionId)
+        : marketplaceReindexState.auctionMap.get(input.auctionId); //de scris
     const modifiedDate = DateUtils.getUtcDateFromTimestamp(input.timestamp);
 
-    if (auctionIndex === -1) {
+    if (!auction) {
       return;
     }
 
-    marketplaceReindexState.auctions[auctionIndex].status = AuctionStatusEnum.Closed;
-    marketplaceReindexState.auctions[auctionIndex].blockHash = marketplaceReindexState.auctions[auctionIndex].blockHash ?? input.blockHash;
-    marketplaceReindexState.auctions[auctionIndex].modifiedDate = modifiedDate;
+    marketplaceReindexState.updateAuctionStatus(auction, input.blockHash, AuctionStatusEnum.Closed, input.timestamp);
 
-    marketplaceReindexState.setInactiveOrdersForAuction(marketplaceReindexState.auctions[auctionIndex].id, modifiedDate);
+    marketplaceReindexState.setInactiveOrdersForAuction(auction, modifiedDate);
   }
 }

@@ -11,28 +11,26 @@ export class ReindexAuctionEndedHandler {
   constructor() {}
 
   handle(marketplaceReindexState: MarketplaceReindexState, input: AuctionEndedSummary, paymentToken: Token): void {
-    const auctionIndex = marketplaceReindexState.getAuctionIndexByAuctionId(input.auctionId);
+    const auction = marketplaceReindexState.auctionMap.get(input.auctionId);
     const modifiedDate = DateUtils.getUtcDateFromTimestamp(input.timestamp);
 
-    if (auctionIndex === -1) {
+    if (!auction) {
       return;
     }
 
-    marketplaceReindexState.auctions[auctionIndex].status = AuctionStatusEnum.Ended;
-    marketplaceReindexState.auctions[auctionIndex].blockHash = marketplaceReindexState.auctions[auctionIndex].blockHash ?? input.blockHash;
-    marketplaceReindexState.auctions[auctionIndex].modifiedDate = modifiedDate;
+    marketplaceReindexState.updateAuctionStatus(auction, input.blockHash, AuctionStatusEnum.Ended, input.timestamp);
 
-    const winnerOrderId = marketplaceReindexState.setAuctionOrderWinnerStatusAndReturnId(
-      marketplaceReindexState.auctions[auctionIndex].id,
-      OrderStatusEnum.Bought,
-      modifiedDate,
-    );
+    const winnerOrderId = marketplaceReindexState.setAuctionOrderWinnerStatusAndReturnId(auction, OrderStatusEnum.Bought, modifiedDate);
 
     if (winnerOrderId !== -1) {
-      marketplaceReindexState.setInactiveOrdersForAuction(marketplaceReindexState.auctions[auctionIndex].id, modifiedDate, winnerOrderId);
+      marketplaceReindexState.setInactiveOrdersForAuction(auction, modifiedDate, winnerOrderId);
     } else if (input.currentBid !== '0') {
-      const order = marketplaceReindexState.createOrder(auctionIndex, input, OrderStatusEnum.Bought, paymentToken);
-      marketplaceReindexState.orders.push(order);
+      const order = marketplaceReindexState.createOrder(auction, input, OrderStatusEnum.Bought, paymentToken);
+      if (auction.orders) {
+        marketplaceReindexState.auctionMap.get(auction.marketplaceAuctionId).orders.push(order);
+      } else {
+        marketplaceReindexState.auctionMap.get(auction.marketplaceAuctionId).orders = [order];
+      }
     }
   }
 }
