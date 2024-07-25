@@ -36,7 +36,7 @@ export class NftScamService {
   }
 
   async validateNftsScamInfoArray(nfts: Asset[]): Promise<boolean> {
-    console.log(2222222)
+    console.log(2222222, nfts.map(x => x.metadata))
     console.log('validateNftsScamInfoArray', { scamMINRTT: JSON.stringify(nfts) })
     await this.pluginsService.computeScamInfo(nfts);
     for (const nft of nfts) {
