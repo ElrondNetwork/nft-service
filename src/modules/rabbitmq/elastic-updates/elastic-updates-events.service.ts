@@ -142,11 +142,13 @@ export class ElasticUpdatesEventsService {
       console.log({ nft })
 
       if (!nft || Object.keys(nft).length === 0) {
+        console.log(11111)
         continue;
       }
 
       collectionTypes[collection] = nft.type;
       nftsToUpdate.push(nft);
+      console.log(11111, collectionTypes, nftsToUpdate)
     }
 
     nftsToUpdate = [...new Set(nftsToUpdate)];
@@ -154,6 +156,8 @@ export class ElasticUpdatesEventsService {
     const deletes: Promise<any>[] = nftsToDelete.map((n) => {
       return this.documentDbService.deleteNftScamInfo(n);
     });
+
+    console.log({ nftsToUpdate })
 
     await this.nftScamInfoService.validateNftsScamInfoArray(nftsToUpdate);
 
