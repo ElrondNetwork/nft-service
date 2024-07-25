@@ -12,6 +12,7 @@ import { NftScamService } from 'src/modules/scam/nft-scam.service';
 import { DocumentDbService } from 'src/document-db/document-db.service';
 import { CacheInfo } from 'src/common/services/caching/entities/cache.info';
 import { RedisCacheService } from '@multiversx/sdk-nestjs-cache';
+import { DateUtils } from 'src/utils/date-utils';
 
 @Injectable()
 export class ElasticUpdatesEventsService {
@@ -111,7 +112,9 @@ export class ElasticUpdatesEventsService {
   }
 
   public async handleScamInfoForNftMintBurnAndUpdateEvents(mintEvents: any[]): Promise<void> {
+    console.log(1111, 'here', DateUtils.getCurrentTimestamp())
     await new Promise((resolve) => setTimeout(resolve, 10000));
+    console.log(33333, 'here', DateUtils.getCurrentTimestamp())
     console.log('SCAM', { mint: JSON.stringify(mintEvents) })
     let nftsToUpdate: Asset[] = [];
     let nftsToDelete: string[] = [];
