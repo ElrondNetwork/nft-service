@@ -111,7 +111,7 @@ export class ElasticUpdatesEventsService {
   }
 
   public async handleScamInfoForNftMintBurnAndUpdateEvents(mintEvents: any[]): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 10000));
     console.log('SCAM', { mint: JSON.stringify(mintEvents) })
     let nftsToUpdate: Asset[] = [];
     let nftsToDelete: string[] = [];
