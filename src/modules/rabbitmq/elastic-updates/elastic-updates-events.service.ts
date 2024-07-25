@@ -23,7 +23,7 @@ export class ElasticUpdatesEventsService {
     private readonly documentDbService: DocumentDbService,
     private readonly redisCacheService: RedisCacheService,
     private readonly mxApiService: MxApiService,
-  ) {}
+  ) { }
 
   public async handleNftMintEvents(mintEvents: any[], hash: string): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 10000));
@@ -112,7 +112,7 @@ export class ElasticUpdatesEventsService {
 
   public async handleScamInfoForNftMintBurnAndUpdateEvents(mintEvents: any[]): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 5000));
-
+    console.log('SCAM', { mint: JSON.stringify(mintEvents) })
     let nftsToUpdate: Asset[] = [];
     let nftsToDelete: string[] = [];
     let collectionTypes: { [key: string]: string } = {};
@@ -127,6 +127,7 @@ export class ElasticUpdatesEventsService {
       }
 
       const identifier = `${collection}-${createTopics.nonce}`;
+      console.log({ identifier })
       let nft: Asset;
 
       if (event.identifier === NftEventEnum.ESDTNFTBurn) {
@@ -137,6 +138,8 @@ export class ElasticUpdatesEventsService {
       }
 
       nft = await this.assetByIdentifierService.getAsset(identifier);
+
+      console.log({ nft })
 
       if (!nft || Object.keys(nft).length === 0) {
         continue;
