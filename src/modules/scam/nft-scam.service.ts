@@ -26,7 +26,7 @@ export class NftScamService {
     private readonly pluginsService: PluginService,
     private readonly cacheEventsPublisher: CacheEventsPublisherService,
     private readonly logger: Logger,
-  ) {}
+  ) { }
 
   async validateNftScamInfoForIdentifier(identifier: string): Promise<boolean> {
     const nft = await this.assetByIdentifierService.getAsset(identifier);
@@ -36,6 +36,8 @@ export class NftScamService {
   }
 
   async validateNftsScamInfoArray(nfts: Asset[]): Promise<boolean> {
+    console.log(2222222)
+    console.log('validateNftsScamInfoArray', { scamMINRTT: JSON.stringify(nfts) })
     await this.pluginsService.computeScamInfo(nfts);
     for (const nft of nfts) {
       await this.validateNftScamInfo(nft);
