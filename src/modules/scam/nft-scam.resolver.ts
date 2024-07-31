@@ -8,10 +8,10 @@ import { GraphQLError } from 'graphql';
 
 @Resolver(() => Boolean)
 export class NftScamResolver {
-  constructor(private readonly nftScamService: NftScamService) {}
+  constructor(private readonly nftScamService: NftScamService) { }
 
   @Mutation(() => Boolean)
-  @UseGuards(JwtOrNativeAuthGuard, GqlAdminAuthGuard)
+  // @UseGuards(JwtOrNativeAuthGuard, GqlAdminAuthGuard)
   async validateOrUpdateNftScamInfo(@Args('identifier') identifier: string): Promise<boolean> {
     try {
       return await this.nftScamService.validateNftScamInfoForIdentifier(identifier);
